@@ -4,20 +4,21 @@ const app= express()
 const PORT = process.env.PORT || 5000;
 const cors = require('cors');
 app.use(cors());
+app.use(express.json());
+app.set('view engine', 'ejs');
 
 app.get('/get',(req,res)=>{
-  res.send('Hellow world from backend  get Api ')
+  res.send('Hellow world i am res.send  response method ')
 })
 app.post('/post', (req, res) => {
-  res.json({ message: 'Hello from backend post API' });  // ✅
+  res.json({ message: 'Hellow world i am res.json  response method' });  // ✅
+});
+app.get('/redirect', (req, res) => {
+  res.redirect('https://www.google.com');   // / سے /home پر redirect
 });
 
-app.put('/put', (req, res) => {
-  res.json({ message: 'Hello from backend put API' });  // ✅
-});
-
-app.delete('/delete', (req, res) => {
-  res.json({ message: 'Hello from backend delete API' });
+app.get('/render', (req, res) => {
+  res.render('home')
 });
 
 app.listen(PORT, () => {
