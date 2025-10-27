@@ -8,42 +8,41 @@ const{body,validationResult}=require('express-validator');
 // Middleware
 app.use(express.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
-
+const path = require('path'); 
+const multer= require('multer')
 app.use(express.json());
 app.use(cors());
 
-// Custom Middleware (Must have req, res, next)
-const Middleware = (req, res, next) => {
-  console.log("✅ Middleware executed");
-  next(); // Move to next function
-};
-
-app.use(Middleware); // Apply middleware globally
-
-// MongoDB Connection
-mongoose.connect('mongodb://localhost:27017/ecommerceDB')
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.log("❌ MongoDB Error:", err));
-
-// ✅ Route with Middleware properly used
-let validationRegistration=[
-  body('name').isLength({min:3,max:5}).withMessage('Name must be at least 3 characters long'),
-  body('email').isEmail().withMessage('Invalid email address')
-
-]
-app.post('/myForm',validationRegistration, (req, res) => {
-  const errors=validationResult(req);
-  if(errors.isEmpty()){
-    res.send(req.body);
-  }else{
-    res.status(400).json({errors:errors.array()})
+const storage=multer.diskStorage({
+  destination:(req,file,cb)=>{
+    cb(null,'uploads/')
+  },
+  filename:(req,file,cb)=>{
+    cb(null,Date.now()+'-'+file.originalname)
   }
-});
-// ✅ Another route (for example)
-app.get('/test', (req, res) => {
-  res.render('login')
 
-});
+})
+const fileFilter=(req,file,cb)=>{
+  if(file.mimetype==='image/png'){ 
+    cb(null,true)
+  }else{
+    cb(new Error('Only jpeg files are allowed'),false)
+  }
+}
+const upload=multer({
+  storage:storage,
+  limits:{fileSize:1024*1024*5},
+fileFilter:fileFilter
+
+})
+
+app.get('/',(req,res)=>{
+  res.render('login')
+})
+app.post('/myForm',upload.single('profile'),(req,res)=>{
+res.send(req.file)
+})
+
 
 // Start Server
 app.listen(PORT, () => console.log(`✅ API Server running at http://localhost:${PORT}`));
