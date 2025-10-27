@@ -4,8 +4,11 @@ const mongoose = require('mongoose');
 const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 5000;
-
+const{body,validationResult}=require('express-validator');
 // Middleware
+app.use(express.urlencoded({ extended: true }));
+app.set("view engine", "ejs");
+
 app.use(express.json());
 app.use(cors());
 
@@ -23,14 +26,23 @@ mongoose.connect('mongodb://localhost:27017/ecommerceDB')
   .catch(err => console.log("❌ MongoDB Error:", err));
 
 // ✅ Route with Middleware properly used
-app.get('/read', (req, res) => {
-  console.log("✅ Route '/read' executed");
-  res.send("Hello from /read route!");
-});
+let validationRegistration=[
+  body('name').isLength({min:3,max:5}).withMessage('Name must be at least 3 characters long'),
+  body('email').isEmail().withMessage('Invalid email address')
 
+]
+app.post('/myForm',validationRegistration, (req, res) => {
+  const errors=validationResult(req);
+  if(errors.isEmpty()){
+    res.send(req.body);
+  }else{
+    res.status(400).json({errors:errors.array()})
+  }
+});
 // ✅ Another route (for example)
 app.get('/test', (req, res) => {
-  res.send("Hello from /test route!");
+  res.render('login')
+
 });
 
 // Start Server
