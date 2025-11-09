@@ -1,62 +1,25 @@
 const express = require('express');
-const bcrypt = require('bcrypt');
-const path = require('path');
+const cookieParser = require('cookie-parser');
 
 const app = express();
-const PORT = 5000;
+app.use(cookieParser());
 
-// Middleware
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
-
-// Temporary in-memory user storage
-let users = [];
-
-// GET signup page
-app.get('/signup', (req, res) => {
-  res.render('signup', { error: null });
+// Cookie Set کرنا
+app.get('/set-cookie', (req, res) => {
+  res.cookie('username', 'Hussain', { maxAge: 60000 }); // 60 sec
+  res.send('Cookie set ho gayi ✅');
 });
 
-// POST signup form
-app.post('/signup', async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.render('signup', { error: 'Email اور Password دونوں لازمی ہیں' });
-  }
-
-  // Check duplicate
-  if (users.find(u => u.email === email)) {
-    return res.render('signup', { error: 'User already exists! Login instead' });
-  }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-  users.push({ email, password: hashedPassword });
-
-  // Redirect to login page
-  res.redirect('/login');
+// Cookie Read کرنا
+app.get('/get-cookie', (req, res) => {
+  const user = req.cookies.username;
+  res.send(`Cookie Value: ${user}`);
 });
 
-// GET login page
-app.get('/login', (req, res) => {
-  res.render('login', { error: null });
+// Cookie Delete کرنا
+app.get('/clear-cookie', (req, res) => {
+  res.clearCookie('username');
+  res.send('Cookie delete ho gayi ❌');
 });
 
-// POST login form
-app.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-
-  const user = users.find(u => u.email === email);
-  if (!user) return res.render('login', { error: 'User not found! Signup first.' });
-
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) return res.render('login', { error: 'Incorrect password!' });
-
-  // Login successful → render welcome page
-  res.render('welcome', { email });
-});
-
-// Start server
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+app.listen(5000, () => console.log("Server running on http://localhost:5000"));
