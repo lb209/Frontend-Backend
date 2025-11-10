@@ -1,25 +1,29 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const csrf = require('csurf');
 
 const app = express();
+
+// Middleware setup
 app.use(cookieParser());
+app.use(express.urlencoded({ extended: true }));
 
-// Cookie Set کرنا
-app.get('/set-cookie', (req, res) => {
-  res.cookie('username', 'Hussain', { maxAge: 60000 }); // 60 sec
-  res.send('Cookie set ho gayi ✅');
+// CSRF Protection
+const csrfProtection = csrf({ cookie: true });
+
+app.set('view engine', 'ejs');
+
+// GET Signup Page
+app.get('/signup', csrfProtection, (req, res) => {
+  res.render('signup', { csrfToken: req.csrfToken(), error: null });
 });
 
-// Cookie Read کرنا
-app.get('/get-cookie', (req, res) => {
-  const user = req.cookies.username;
-  res.send(`Cookie Value: ${user}`);
+// POST Signup
+app.post('/signup', csrfProtection, (req, res) => {
+  const { email, password } = req.body;
+  // User save logic (database add karna etc.)
+  res.send(`✅ User registered successfully with email: ${email}`);
 });
 
-// Cookie Delete کرنا
-app.get('/clear-cookie', (req, res) => {
-  res.clearCookie('username');
-  res.send('Cookie delete ho gayi ❌');
-});
-
-app.listen(5000, () => console.log("Server running on http://localhost:5000"));
+// Server Run
+app.listen(5000, () => console.log("🚀 Server running on http://localhost:5000"));
