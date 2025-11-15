@@ -1,66 +1,71 @@
-const express = require('express');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const bodyParser = require('body-parser');
-const StudentModel = require('./Schema/crudSchema');
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+
 const app = express();
+app.use(cors());
 app.use(bodyParser.json());
-const mongoose = require('mongoose');
 
 // MongoDB connection
-mongoose.connect("mongodb://127.0.0.1:27017/testDB", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log("MongoDB connected ✅"))
-.catch((err) => console.error("MongoDB connection error:", err));
+mongoose.connect("mongodb://localhost:27017/ecommerceDB")
+  .then(() => console.log("DB Connected"))
+  .catch(err => console.log(err));
 
-// Dummy in-memory user data
-const users = [];
+// Schema
+const studentSchema = new mongoose.Schema({
+  name: String,
+  city: String,
+});
 
-// Secret key for JWT
-const JWT_SECRET = "my_super_secret_key";
+const StudentModel = mongoose.model("Student", studentSchema);
 
-app.post('/signup',async(req,res)=>{
-try {
-    const{email,password}=req.body;
-  const userExist=await StudentModel.findOne({email})
-  if(userExist){
-  return res.status(400).send({message:"User already exists"});
-}
-
-  const hashedPassword=await bcrypt.hash(password,10);
-  const newUser=new StudentModel({email,password:hashedPassword});
-  await newUser.save();
-  const token=jwt.sign({email},JWT_SECRET,{expiresIn:"24h"});
-  res.status(200).send({message:"User signed up successfully",token});
-} catch (error) {
-    res.status(500).send({message:"Internal Server Error"});
-}
-})
-app.post('/login',async(req,res)=>{
+// CREATE
+app.post("/create", async (req, res) => {
   try {
-    const{email,password}=req.body;
-   
-const user = await StudentModel.findOne({ email });
-if(!user){
-    return res.status(400).send({ message: "User not found" });
-}
+    const { name, city } = req.body;
+    const newStudent = await StudentModel.create({ name, city });
+    res.json(newStudent);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-  const isMatch = await bcrypt.compare(password, user.password);
-if(!isMatch){
-    return res.status(400).send({ message: "Invalid credentials" });
-}
+// READ (all students)
+app.get("/read", async (req, res) => {
+  try {
+    const students = await StudentModel.find();
+    res.json(students);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-  const token=jwt.sign({email},JWT_SECRET,{expiresIn:"24h"});
-  res.status(200).send({message:"User logged in successfully",token});
+// UPDATE
+app.put("/update/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, city } = req.body;
+    const updatedStudent = await StudentModel.findByIdAndUpdate(
+      id,
+      { name, city },
+      { new: true }
+    );
+    res.json(updatedStudent);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-  }catch(error){
-   console.error(error); // console میں error دیکھو
-   res.status(500).send({message:"Internal Server Error"});
-}
+// DELETE
+app.delete("/delete/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedStudent = await StudentModel.findByIdAndDelete(id);
+    res.json(deletedStudent);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-
-  
-})
 app.listen(5000, () => console.log("✅ Server running on http://localhost:5000"));
