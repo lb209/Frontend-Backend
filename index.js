@@ -1,111 +1,30 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const multer = require("multer");
-const path = require("path");
+const express = require('express');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+const PORT = process.env.PORT || 5000;
 
-// Serve uploaded images
-app.use("/uploads", express.static("uploads"));
+// Rate Limiter
+const limiter= rateLimit({
+  windowMs: 1000 * 60, // 15 minutes
+  max: 3, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again after 15 minutes'
+})
 
-// MongoDB
-mongoose.connect("mongodb://localhost:27017/ecommerceDB")
-  .then(() => console.log("DB Connected"))
-  .catch(err => console.log(err));
+// Apply only on API routes
+app.use('/api', limiter);
 
-// Schema
-const studentSchema = new mongoose.Schema({
-  name: String,
-  city: String,
-  image: String  // image file name
+// Test Route
+app.get('/', (req, res) => {
+  res.send('Welcome to the eCommerce Backend!');
 });
 
-const StudentModel = mongoose.model("Student", studentSchema);
-
-// ---------------------------
-// Multer Storage (Corrected)
-// ---------------------------
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");  // ✔ Correct folder name
-  },
-  filename: (req, file, cb) => {
-    cb(
-      null,
-      Date.now() + path.extname(file.originalname)
-    );
-  }
+// Example API
+app.get('/api/products', (req, res) => {
+  res.send( 'Products API working' );
 });
 
-const upload = multer({ storage });
-
-// ---------------------------
-// CREATE Student
-// ---------------------------
-app.post("/create", upload.single("image"), async (req, res) => {
-  try {
-    const { name, city } = req.body;
-
-    const newStudent = await StudentModel.create({
-      name,
-      city,
-      image: req.file ? req.file.filename : null
-    });
-
-    res.json(newStudent);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// Start Server
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
-
-// ---------------------------
-// READ Students
-// ---------------------------
-app.get("/read", async (req, res) => {
-  try {
-    const students = await StudentModel.find();
-    res.json(students);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ---------------------------
-// UPDATE Student
-// ---------------------------
-app.put("/update/:id", upload.single("image"), async (req, res) => {
-  try {
-    const { name, city } = req.body;
-
-    const updatedStudent = await StudentModel.findByIdAndUpdate(
-      req.params.id,
-      {
-        name,
-        city,
-        ...(req.file && { image: req.file.filename })
-      },
-      { new: true }
-    );
-
-    res.json(updatedStudent);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ---------------------------
-// DELETE Student
-// ---------------------------
-app.delete("/delete/:id", async (req, res) => {
-  try {
-    const deleted = await StudentModel.findByIdAndDelete(req.params.id);
-    res.json(deleted);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.listen(5000, () => console.log("Server running on http://localhost:5000"));
