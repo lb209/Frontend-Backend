@@ -1,30 +1,31 @@
 const express = require('express');
+const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = 5000;
 
-// Rate Limiter
-const limiter= rateLimit({
-  windowMs: 1000 * 60, // 15 minutes
-  max: 3, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again after 15 minutes'
-})
+// 🔐 Helmet middleware
+app.use(helmet());
 
-// Apply only on API routes
+// ⏳ Rate Limiter
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 3,
+  message: 'Too many requests, try again later'
+});
 app.use('/api', limiter);
 
-// Test Route
+// Test route
 app.get('/', (req, res) => {
-  res.send('Welcome to the eCommerce Backend!');
+  res.send('Secure Backend is running');
 });
 
-// Example API
+// API
 app.get('/api/products', (req, res) => {
-  res.send( 'Products API working' );
+  res.json({ message: 'Products API working' });
 });
 
-// Start Server
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
