@@ -1,31 +1,71 @@
 const express = require('express');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-
+const fs = require('fs');
 const app = express();
 const PORT = 5000;
 
-// 🔐 Helmet middleware
-app.use(helmet());
+app.get('/',(req,res)=>{
+  fs.writeFile('./public/output.txt','Hello fs ',(err)=>{
+    if(err){
+   return   res.status(500).send('Error writing file');
+    }
+  return  res.send('File written successfully');
+  })
+})
 
-// ⏳ Rate Limiter
-const limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 3,
-  message: 'Too many requests, try again later'
-});
-app.use('/api', limiter);
 
-// Test route
-app.get('/', (req, res) => {
-  res.send('Secure Backend is running');
-});
+// Read File
+app.get('/read',(req,res)=>{
+  fs.readFile('./public/output.txt',(err,data)=>{
+    if(err){
+   return   res.status(500).send('Error writing file');
+    }
+ return   res.send(data);
+  })
+})
 
-// API
-app.get('/api/products', (req, res) => {
-  res.json({ message: 'Products API working' });
-});
+//append file
+app.get('/append',(req,res)=>{
+  fs.appendFile('./public/output.txt','\nNew file append',(err)=>{
+    if(err){
+   return   res.status(500).send('Error appendfile');
+    }
+ return   res.send('File append successfully');
+  })
+})
 
+//delete file
+
+app.get('/delete',(req,res)=>{
+  fs.unlink('./public/output.txt',(err)=>{
+    if(err){
+    return  res.status(500).send('Error appendfile');
+    }
+   return res.send('File delete successfully');
+  })
+})
+
+//reade folder
+app.get('/readf',(req,res)=>{
+  fs.readdir('./public',(err,files)=>{
+    if(err){
+    return  res.status(500).send('Error appendfile');
+    }
+  files.forEach(file=>{
+      console.log(file);
+  })
+  
+  return  res.send('Folder read successfully  and check console');
+  })
+})
+//rename folder
+app.get('/rename',(req,res)=>{
+  fs.rename('./public/output.txt','./public/newoutput.txt',(err)=>{
+    if(err){
+      return res.status(500).send('Error rename file');
+    }
+  return  res.send('File rename successfully');
+  })
+})
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
