@@ -1,49 +1,71 @@
 import React, { useState } from "react";
 
 export default function Greeting() {
-  // state
-  const [page, setPage] = useState(1);
+  const [email, setEmail] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState(""); // 👈 backend message
 
-  const limit = 5;
-  const data = [];
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  // numbers banao
-  for (let i = 1; i <= 50; i++) {
-    data.push(i);
-  }
+    try {
+      const res = await fetch("http://localhost:5000/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, subject, message }),
+      });
 
-  // pagination logic
-  const start = (page - 1) * limit;
-  const end = page * limit;
-  const show = data.slice(start, end);
+      const data = await res.json();
+      setStatus(data.message); // 👈 show backend message
 
-  const next = () => {
-    if (page < Math.ceil(data.length / limit)) {
-      setPage(page + 1);
-    }
-  };
-
-  const prev = () => {
-    if (page > 1) {
-      setPage(page - 1);
+    } catch (error) {
+      setStatus("Server error ❌");
     }
   };
 
   return (
-    <div>
-      <h1>Pagination</h1>
+    <div style={{ width: "300px", margin: "40px auto" }}>
+      <h2>Send Email</h2>
 
-      {/* page par numbers */}
-      {show.map((num) => (
-        <span key={num} style={{ margin: "5px" }}>
-          {num}
-        </span>
-      ))}
+      <form onSubmit={handleSubmit}>
+        <input
+          type="email"
+          placeholder="Enter Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <br /><br />
 
-      <br /><br />
+        <input
+          type="text"
+          placeholder="Subject"
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          required
+        />
+        <br /><br />
 
-      <button onClick={prev}>Prev</button>
-      <button onClick={next}>Next</button>
+        <textarea
+          placeholder="Message"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          required
+        />
+        <br /><br />
+
+        <button type="submit">Send</button>
+      </form>
+
+      {/* ✅ Backend message show here */}
+      {status && (
+        <p style={{ marginTop: "15px", color: "green" }}>
+          {status}
+        </p>
+      )}
     </div>
   );
 }
