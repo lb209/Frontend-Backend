@@ -1,51 +1,39 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
-export default function Greeting() {
-  const [email, setEmail] = useState("");
-  const [subject, setSubject] = useState("");
+function Sms() {
+  const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
-  const [status, setStatus] = useState(""); // 👈 backend message
+  const [status, setStatus] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const res = await fetch("http://localhost:5000/send-email", {
+      const res = await fetch("http://localhost:5000/send-sms", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, subject, message }),
+        body: JSON.stringify({ phone, message }),
       });
 
       const data = await res.json();
-      setStatus(data.message); // 👈 show backend message
-
+      setStatus(data.message);
     } catch (error) {
-      setStatus("Server error ❌");
+      setStatus("Error sending SMS ❌");
     }
   };
 
   return (
-    <div style={{ width: "300px", margin: "40px auto" }}>
-      <h2>Send Email</h2>
+    <div style={{ padding: "20px" }}>
+      <h2>Send SMS</h2>
 
       <form onSubmit={handleSubmit}>
         <input
-          type="email"
-          placeholder="Enter Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <br /><br />
-
-        <input
           type="text"
-          placeholder="Subject"
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          required
+          placeholder="Phone number (+92...)"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
         />
         <br /><br />
 
@@ -53,19 +41,15 @@ export default function Greeting() {
           placeholder="Message"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          required
         />
         <br /><br />
 
-        <button type="submit">Send</button>
+        <button type="submit">Send SMS</button>
       </form>
 
-      {/* ✅ Backend message show here */}
-      {status && (
-        <p style={{ marginTop: "15px", color: "green" }}>
-          {status}
-        </p>
-      )}
+      <p>{status}</p>
     </div>
   );
 }
+
+export default Sms;
