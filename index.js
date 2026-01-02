@@ -1,44 +1,83 @@
 const express = require("express");
-const cors = require("cors");
-const twilio = require("twilio");
-const dotenv = require("dotenv");
+const puppeteer = require("puppeteer");
 
-dotenv.config();
 const app = express();
 const PORT = 5000;
 
-// middleware
-app.use(cors());
-app.use(express.json());
-
-// 🔐 Twilio credentials
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const client = new twilio(accountSid, authToken);
-
-// 📩 SMS Route
-app.post("/send-sms", async (req, res) => {
-  const { phone, message } = req.body;
-
+// PDF Generate Route
+app.get("/generate-pdf", async (req, res) => {
   try {
-    await client.messages.create({
-      body: message,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: phone,
+    // 1️⃣ Browser open
+    const browser = await puppeteer.launch({
+      headless: "new"
     });
 
-    res.json({ success: true, message: "SMS sent successfully ✅" });
+    // 2️⃣ New page
+    const page = await browser.newPage();
+
+    // 3️⃣ HTML content
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8" />
+        <title>PDF</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+          }
+          h1 {
+            color: blue;
+          }
+          p {
+            font-size: 16px;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Hello PDF 👋</h1>
+        <p>This PDF is generated using Node.js & Puppeteer</p>
+        <p>Name: Hussain</p>
+        <p>Date: ${new Date().toDateString()}</p>
+      </body>
+      </html>
+    `;
+
+    // 4️⃣ Load HTML
+    await page.setContent(htmlContent, {
+      waitUntil: "load"
+    });
+
+    // 5️⃣ Generate PDF
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true,
+    });
+
+    // 6️⃣ Close browser
+    await browser.close();
+
+    // 7️⃣ Send PDF
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "attachment; filename=sample.pdf",
+    });
+
+    res.send(pdfBuffer);
+
   } catch (error) {
     console.log(error);
-    res.status(500).json({ success: false, message: "SMS failed ❌" });
+    res.status(500).send("PDF generate nahi ho saki ❌");
   }
 });
 
-// test route
+// Test route
 app.get("/", (req, res) => {
-  res.send("SMS Backend is running");
+  res.send("PDF Backend is running");
 });
 
+// Server start
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
