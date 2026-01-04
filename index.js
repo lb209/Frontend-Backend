@@ -1,83 +1,33 @@
 const express = require("express");
-const puppeteer = require("puppeteer");
+const http = require("http");
+const { Server } = require("socket.io");
 
 const app = express();
-const PORT = 5000;
+const server = http.createServer(app);
+const io = new Server(server);
 
-// PDF Generate Route
-app.get("/generate-pdf", async (req, res) => {
-  try {
-    // 1️⃣ Browser open
-    const browser = await puppeteer.launch({
-      headless: "new"
+app.use(express.static("public"));
+
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
+
+  socket.on("sendMessage", (data) => {
+    // sab users ko bhejo (sender id ke sath)
+    io.emit("receiveMessage", {
+      id: socket.id,
+      message: data.message,
     });
+  });
 
-    // 2️⃣ New page
-    const page = await browser.newPage();
+  socket.on("deleteMessage", (msgId) => {
+    io.emit("messageDeleted", msgId);
+  });
 
-    // 3️⃣ HTML content
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8" />
-        <title>PDF</title>
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            padding: 40px;
-          }
-          h1 {
-            color: blue;
-          }
-          p {
-            font-size: 16px;
-          }
-        </style>
-      </head>
-      <body>
-        <h1>Hello PDF 👋</h1>
-        <p>This PDF is generated using Node.js & Puppeteer</p>
-        <p>Name: Hussain</p>
-        <p>Date: ${new Date().toDateString()}</p>
-      </body>
-      </html>
-    `;
-
-    // 4️⃣ Load HTML
-    await page.setContent(htmlContent, {
-      waitUntil: "load"
-    });
-
-    // 5️⃣ Generate PDF
-    const pdfBuffer = await page.pdf({
-      format: "A4",
-      printBackground: true,
-    });
-
-    // 6️⃣ Close browser
-    await browser.close();
-
-    // 7️⃣ Send PDF
-    res.set({
-      "Content-Type": "application/pdf",
-      "Content-Disposition": "attachment; filename=sample.pdf",
-    });
-
-    res.send(pdfBuffer);
-
-  } catch (error) {
-    console.log(error);
-    res.status(500).send("PDF generate nahi ho saki ❌");
-  }
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
 });
 
-// Test route
-app.get("/", (req, res) => {
-  res.send("PDF Backend is running");
-});
-
-// Server start
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+server.listen(5000, () => {
+  console.log("Server running on http://localhost:5000");
 });
