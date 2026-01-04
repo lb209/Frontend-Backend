@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebSocket Chat</title>
+  <style>
+    body { font-family: Arial; }
+    #chat {
+      border: 1px solid #ccc;
+      height: 300px;
+      overflow-y: auto;
+      padding: 10px;
+    }
+    .me {
+      text-align: right;
+      color: blue;
+    }
+    .other {
+      text-align: left;
+      color: green;
+    }
+    button.delete {
+      margin-left: 10px;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>WebSocket Chat App</h2>
+
+<div id="chat"></div>
+
+<input id="msg" placeholder="Type message..." />
+<button onclick="send()">Send</button>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  const chat = document.getElementById("chat");
+
+  function send() {
+    const input = document.getElementById("msg");
+    const text = input.value.trim();
+    if (!text) return;
+
+    socket.emit("sendMessage", { message: text });
+    input.value = "";
+  }
+
+  socket.on("receiveMessage", (data) => {
+    const p = document.createElement("p");
+    const msgId = Math.random().toString(36).substring(2);
+
+    p.id = msgId;
+
+    if (data.id === socket.id) {
+      // 👤 Apna message
+      p.className = "me";
+      p.innerHTML = `
+        ${data.message}
+        <button class="delete" onclick="deleteMsg('${msgId}')">Delete</button>
+      `;
+    } else {
+      // 👥 Dosray user ka message
+      p.className = "other";
+      p.innerText = data.message;
+    }
+
+    chat.appendChild(p);
+    chat.scrollTop = chat.scrollHeight;
+  });
+
+  function deleteMsg(id) {
+    document.getElementById(id)?.remove();
+    socket.emit("deleteMessage", id);
+  }
+
+  socket.on("messageDeleted", (id) => {
+    document.getElementById(id)?.remove();
+  });
+</script>
+
+</body>
+</html>
